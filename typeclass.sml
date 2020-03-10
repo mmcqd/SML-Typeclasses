@@ -134,7 +134,6 @@ end
 
 
 functor ParserT (M : MONADPLUS) : MONADPLUS =
-(*  where type 'a f = char list -> ('a * char list) M.f = *)
 MonadPlus (
   infix >>=
   type 'a f = char list -> ('a * char list) M.f
