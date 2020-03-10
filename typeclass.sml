@@ -156,7 +156,6 @@ functor ParserComb (M : MONADPLUS) :
   end
 =
 struct
-  structure M = M
   structure P = ParserT(M)
   open P
   type 'a parser = 'a f
