@@ -101,8 +101,6 @@ sig
   include MONADPLUS
   type 'a parser = 'a f
   val item : char parser
-  val >> : 'a parser * 'b parser -> 'b parser
-  val << : 'a parser * 'b parser -> 'a parser
   val >< : 'a parser * 'b parser -> unit parser
   val |-> : string * 'a -> 'a parser
   val sat : (char -> bool) -> char parser
@@ -145,7 +143,7 @@ MonadPlus (
     q >>= (fn x =>
     return $ f x))
   fun zero _ = M.zero
-  fun ++ (p,q) i = M.++ (p i,q i)
+  fun ++ (p,q) i = M.++(p i, q i)
 )
 
 
@@ -160,19 +158,14 @@ struct
   open P
   type 'a parser = 'a f
 
-  infix 1 >>= >> << >< ++ |-> <$>
+  infix 1 >>= *> <* >< ++ |-> <$>
   infix 0 %
   fun item [] = zero []
     | item (x::xs) = return x xs
 
-  fun p >> q =
-    p >>= (fn _ => q)
-
-  fun p << q =
-    p >>= (fn x => q >> return x)
 
   fun p >< q =
-    p >> q >> return ()
+    p *> q *> return ()
 
   fun sat p =
     item >>= (fn c =>
@@ -205,7 +198,7 @@ struct
     (char_list $ String.explode s) >>= (return o String.implode)
 
   fun s |-> x =
-    string s >> return x
+    string s *> return x
 
 
   fun many p =
@@ -233,7 +226,7 @@ struct
 
   fun sepby1 p sep =
     p               >>= (fn x =>
-    many (sep >> p) >>= (fn xs =>
+    many (sep *> p) >>= (fn xs =>
     return $ x::xs
     ))
 
@@ -241,7 +234,7 @@ struct
     sepby1 p sep ++ return []
 
   fun delim l p r =
-    l >> p << r
+    l *> p <* r
 
   fun chainl1 terms ops =
   let
@@ -287,22 +280,22 @@ struct
     return $ f x))
     ++ p
 
-  val whitespace = (char #" ") ++ (char #"\t") ++ (char #"\n") >> return ()
+  val whitespace = (char #" ") ++ (char #"\t") ++ (char #"\n") *> return ()
 
   fun one_line_comment p =
-    p >>
-    (many $ sat (fn c => c <> #"\n")) >>
+    p *>
+    (many $ sat (fn c => c <> #"\n")) *>
     return ()
 
   val file_name = fn s =>
     many1 (alphanum ++ (foldl op++ zero $ map char [#"-",#"/",#"_",#"~"])) >>= (fn f =>
-    char #"." >>
+    char #"." *>
     string s  >>= (fn ex =>
     return $ (String.implode f)^"."^ex
     ))
 
 
-  fun consume p = p >> return ()
+  fun consume p = p *> return ()
 
   fun p % s = p $ String.explode s
 end
@@ -311,12 +304,10 @@ structure OptionMP =
 MonadPlus (
   type 'a f = 'a option
   val return = SOME
-  fun fmap f (SOME x) = SOME (f x)
-    | fmap _ _ = NONE
+  val fmap = Option.map
   fun <*> (SOME f,SOME x) = SOME (f x)
     | <*> _ = NONE
-  fun >>= (SOME x, f) = f x
-    | >>= _ = NONE
+  fun >>= (x,f) = Option.mapPartial f x
   val zero = NONE
   fun ++ (NONE,x) = x
     | ++ (x,y) = x
@@ -336,3 +327,7 @@ MonadPlus (
 
 structure ParserDet = ParserComb(OptionMP)
 structure ParserNDet = ParserComb(ListMP)
+
+infix 1 >>=  >< ++ |-> <$ $> <* *> <*>
+infixr 1 <$>
+infix 0 %
