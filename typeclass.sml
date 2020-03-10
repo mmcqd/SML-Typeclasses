@@ -322,4 +322,17 @@ MonadPlus (
     | ++ (x,y) = x
 )
 
+structure ListMP =
+MonadPlus (
+  type 'a f = 'a list
+  fun return x = [x]
+  val fmap = map
+  fun <*> (f::fs,xs) = fmap f xs @ <*> (fs,xs)
+    | <*> _ = []
+  fun >>= (xs,f) = List.concatMap f xs
+  val zero = []
+  val ++ = op@
+)
+
 structure ParserDet = ParserComb(OptionMP)
+structure ParserNDet = ParserComb(ListMP)
