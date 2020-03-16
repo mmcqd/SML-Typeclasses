@@ -13,7 +13,6 @@ end
 signature ARROW =
 sig
   include ARROWMIN
-  val unsplit : ('b * 'c -> 'd) -> ('b * 'c,'d) a
   val *** : ('b,'c) a * ('d,'e) a -> ('b * 'd,'c * 'e) a
   val &&& : ('b,'c) a * ('b,'d) a -> ('b,'c * 'd) a
   val liftA2 : ('b * 'c -> 'd) -> ('e,'b) a -> ('e,'c) a -> ('e,'d) a
@@ -22,10 +21,9 @@ end
 functor Arrow (A : ARROWMIN) : ARROW =
 struct
   open A
-  val unsplit = arr
   val op*** = fn (f,g) => first f >>> second g
   val op&&& = fn (f,g) => arr (fn x => (x,x)) >>> f *** g
-  fun liftA2 h f g = f &&& g >>> unsplit h
+  fun liftA2 h f g = f &&& g >>> arr h
 end
 
 
