@@ -1,7 +1,7 @@
 infixr $
 fun f $ x = f x
 
-signature PARSER_COMB =
+signature PARSER_COMBI =
 sig
   include MONADPLUS
   type 'a parser = 'a f
@@ -55,7 +55,7 @@ MonadPlus (
 
 functor ParserComb (M : MONADPLUS) :
   sig
-    include PARSER_COMB where type 'a f = char list -> ('a * char list) M.f
+    include PARSER_COMBI where type 'a f = char list -> ('a * char list) M.f
     val % : 'a parser * string -> ('a * char list) M.f
   end
 =
@@ -206,10 +206,9 @@ struct
   fun p % s = p $ String.explode s
 end
 
+
 structure ParserDet = ParserComb(OptionMP)
 structure ParserNDet = ParserComb(ListMP)
 structure ParserInf = ParserComb(StreamMP)
 
-infix 1 >>=  >< ++ |-> <$ $> <* *> <*>
-infixr 1 <$>
-infix 0 %
+

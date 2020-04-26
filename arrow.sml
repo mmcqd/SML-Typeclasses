@@ -38,7 +38,7 @@ Arrow (
 )
 
 
-
+(*
 open SimpleArr
 
 datatype expr =
@@ -57,4 +57,23 @@ val rec eval : expr -> (subst,int option) a =
    | Add (e1,e2) => liftA2 (OptionMP.liftA2 op+ ) (arr (eval e1), arr (eval e2))
    | Mul (e1,e2) => liftA2 (OptionMP.liftA2 op* ) (arr (eval e1), arr (eval e2))
 
+
+infix >>>:
+fun >>>: (f,g) x y = g x (f y)
+
+fun liftR r = r *** r >>>: liftA2
+
+
+
+val rec eval' : expr -> (subst,int option) a = fn x =>
+  let
+    val lift = liftR eval'
+  in
+    case x of
+       Int i => Fn.const $ SOME i
+     | Var v => lookup v
+     | Add p => lift (OptionMP.liftA2 op+ ) p
+     | Mul p => lift (OptionMP.liftA2 op* ) p
+  end
+  *)
 
