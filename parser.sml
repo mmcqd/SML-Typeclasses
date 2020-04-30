@@ -18,6 +18,7 @@ sig
   val char : char -> char parser
   val char_list : char list -> char list parser
   val string : string -> string parser
+  val nat : int parser
   val int : int parser
   val many : 'a parser -> 'a list parser
   val many1 : 'a parser -> 'a list parser
@@ -100,8 +101,7 @@ struct
         return $ x::xs
         ))
 
-  fun string s =
-    (char_list $ String.explode s) >>= (return o String.implode)
+  fun string s = String.implode <$> (char_list o String.explode) s
 
   fun s |-> x =
     string s *> return x
@@ -113,34 +113,30 @@ struct
     return $ x::xs))
     ++ return []
 
-  fun many1 p =
-    p       >>= (fn x =>
-    many p  >>= (fn xs =>
-    return (x::xs)))
+  fun many p = liftA2 op:: (p, fn x => many p x) ++ return []
 
-  val int=
+  fun many1 p = liftA2 op:: (p,many p)
+
+  val nat =
     let
-      val p = ("~" |-> ~) ++ (return (fn x => x))
       fun toNum c = Char.ord c - Char.ord #"0"
       val eval = foldl (fn (c,i) => toNum c + 10*i) 0
     in
-      p           >>= (fn f =>
-      many1 digit >>= (fn ds =>
-      return $ f $ eval ds
-      ))
+      eval <$> many1 digit
     end
 
-  fun sepby1 p sep =
-    p               >>= (fn x =>
-    many (sep *> p) >>= (fn xs =>
-    return $ x::xs
-    ))
+  val int =
+    let
+      val p = ("~" |-> ~) ++ (return (fn x => x))
+    in
+      liftA2 op$ (p,nat)
+    end
 
-  fun sepby p sep =
-    sepby1 p sep ++ return []
+  fun sepby1 p sep = liftA2 op:: (p,many $ sep *> p)
 
-  fun delim l p r =
-    l *> p <* r
+  fun sepby p sep = sepby1 p sep ++ return []
+
+  fun delim l p r = l *> p <* r
 
   fun chainl1 terms ops =
   let
@@ -151,6 +147,7 @@ struct
       ))
       ++
       return x
+
   in
     terms >>= rest
   end
