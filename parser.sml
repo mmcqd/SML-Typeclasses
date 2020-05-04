@@ -6,6 +6,7 @@ sig
   include MONADPLUS
   type 'a parser = 'a f
   val item : char parser
+  val lookahead : int -> string parser
   val choice : ('a parser) list -> 'a parser
   val >< : 'a parser * 'b parser -> unit parser
   val |-> : string * 'a -> 'a parser
@@ -71,6 +72,12 @@ struct
     | item (x::xs) = return x xs
 
 
+  fun lookahead' 0 xs a s = return (String.implode $ List.rev a) s
+    | lookahead' n [] a s = zero []
+    | lookahead' n (x::xs) a s = lookahead' (n-1) xs (x::a) s
+
+  fun lookahead n xs = lookahead' n xs [] xs
+
   fun p >< q =
     p *> q *> return ()
 
@@ -105,13 +112,6 @@ struct
 
   fun s |-> x =
     string s *> return x
-
-
-  fun many p =
-    p      >>= (fn x =>
-    many p >>= (fn xs =>
-    return $ x::xs))
-    ++ return []
 
   fun many p = liftA2 op:: (p, fn x => many p x) ++ return []
 
